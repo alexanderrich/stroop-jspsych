@@ -1,6 +1,8 @@
 /* load psiturk */
 var psiturk = new PsiTurk(uniqueId, adServerLoc, mode);
 
+var timeline = [];
+
 
 /* record id, condition, counterbalance on every trial */
 jsPsych.data.addProperties({
@@ -15,6 +17,8 @@ var welcome_block = {
     cont_key: [' ']
 };
 
+timeline.push(welcome_block);
+
 var instructions_block = {
     type: "text",
     text: "<p>In this experiment, a word will appear in the center " +
@@ -23,164 +27,107 @@ var instructions_block = {
         "for red, <strong>G</strong> for green, and <strong>B</strong> for blue.</p>" +
         "<p>Press the SPACE key to begin.</p>",
     timing_post_trial: 2000,
-    cont_key: [' ']
+    cont_key: [' '],
+    on_finish: function(){
+        psiturk.finishInstructions();
+    }
 };
+
+timeline.push(instructions_block);
 
 /* stimuli specifications */
-var test_stimuli = [
+var trials = [
     {
-        stimulus: "<span style='font-size: 50px; color: red;'>SHIP</span>",
-        data: {
-            word: 'SHIP',
-            color: 'red',
-            congruence: 'unrelated',
-            correct_response: 'R'
-        }
+        stimulus: "<p class='stim' style='color: red;'>SHIP</p>",
+        data: {word: 'SHIP', color: 'red', stimulus_type: 'unrelated', correct_response: 'R'}
     },
     {
-        stimulus: "<span style='font-size: 50px; color: green;'>MONKEY</span>",
-        data: {
-            word: 'MONKEY',
-            color: 'green',
-            congruence: 'unrelated',
-            correct_response: 'G'
-        }
+        stimulus: "<p class='stim' style='color: green;'>MONKEY</p>",
+        data: {word: 'MONKEY', color: 'green', stimulus_type: 'unrelated', correct_response: 'G'}
     },
     {
-        stimulus: "<span style='font-size: 50px; color: blue;'>ZAMBONI</span>",
-        data: {
-            word: 'ZAMBONI',
-            color: 'blue',
-            congruence: 'unrelated',
-            correct_response: 'B'
-        }
+        stimulus: "<p class='stim' style='color: blue;'>ZAMBONI</p>",
+        data: {word: 'ZAMBONI', color: 'blue', stimulus_type: 'unrelated', correct_response: 'B'}
     },
     {
-        stimulus: "<span style='font-size: 50px; color: red;'>RED</span>",
-        data: {
-            word: 'RED',
-            color: 'red',
-            congruence: 'congruent',
-            correct_response: 'R'
-        }
+        stimulus: "<p class='stim' style='color: red;'>RED</p>",
+        data: {word: 'RED', color: 'red', stimulus_type: 'congruent', correct_response: 'R'}
     },
     {
-        stimulus: "<span style='font-size: 50px; color: green;'>GREEN</span>",
-        data: {
-            word: 'GREEN',
-            color: 'green',
-            congruence: 'congruent',
-            correct_response: 'G'
-        }
+        stimulus: "<p class='stim' style='color: green;'>GREEN</p>",
+        data: {word: 'GREEN', color: 'green', stimulus_type: 'congruent', correct_response: 'G'}
     },
     {
-        stimulus: "<span style='font-size: 50px; color: blue;'>BLUE</span>",
-        data: {
-            word: 'BLUE',
-            color: 'blue',
-            congruence: 'congruent',
-            correct_response: 'B'
-        }
+        stimulus: "<p class='stim' style='color: blue;'>BLUE</p>",
+        data: {word: 'BLUE', color: 'blue', stimulus_type: 'congruent', correct_response: 'B'}
     },
     {
-        stimulus: "<span style='font-size: 50px; color: red;'>GREEN</span>",
-        data: {
-            word: 'GREEN',
-            color: 'red',
-            congruence: 'incongruent',
-            correct_response: 'R'
-        }
+        stimulus: "<p class='stim' style='color: red;'>GREEN</p>",
+        data: {word: 'GREEN', color: 'red', stimulus_type: 'incongruent', correct_response: 'R'}
     },
     {
-        stimulus: "<span style='font-size: 50px; color: green;'>BLUE</span>",
-        data: {
-            word: 'BLUE',
-            color: 'green',
-            congruence: 'incongruent',
-            correct_response: 'G'
-        }
+        stimulus: "<p class='stim' style='color: green;'>BLUE</p>",
+        data: {word: 'BLUE', color: 'green', stimulus_type: 'incongruent', correct_response: 'G'}
     },
     {
-        stimulus: "<span style='font-size: 50px; color: blue;'>RED</span>",
-        data: {
-            word: 'RED',
-            color: 'blue',
-            congruence: 'incongruent',
-            correct_response: 'B'
-        }
-    },
+        stimulus: "<p class='stim' style='color: blue;'>RED</p>",
+        data: {word: 'RED', color: 'blue', stimulus_type: 'incongruent', correct_response: 'B'}
+    }
 ];
 
-/* shuffle stimuli */
-var all_trials = jsPsych.randomization.shuffle(test_stimuli);
-
-/* stroop test block. timeline is set to all_trials, so will cycle through the shuffled stimuli */
-var test_block = {
-    type: "single-stim",
-    is_html: true,
-    choices: ['R', 'G', 'B'],
-    prompt: '<br/><strong style="font-size: 30px;">Respond Quickly!</strong><br/><span>Press (R) for red, (G) for green, and (B) for blue.</span>',
-    timing_post_trial: 1000,
-    timeline: all_trials
-};
-
-/* debrief block. Tell participant response time and percent correct. */
-
-var debrief_block = {
-    type: "text",
-    text: function() {
-        return "<p>Your average response time was <strong>" + 
-            getAverageResponseTime() + "ms</strong>. You answered <strong>" +
-            getPercentCorrect() + "%</strong> of trials correctly. Press " +
-            "the SPACE key to complete the experiment. Thank you!</p>";
-    },
-    cont_key: [' ']
-};
-
-
-// returns average response time over all trials
-function getAverageResponseTime() {
-    var trials = jsPsych.data.getTrialsOfType('single-stim');
-
-    var sum_rt = 0;
-    var trial_count = 0;
-    for (var i = 0; i < trials.length; i++) {
-        sum_rt += trials[i].rt;
-        trial_count++;
-    }
-    return Math.floor(sum_rt / trial_count);
-}
-
-// returns percent correct over all trials
-function getPercentCorrect() {
-    var trials = jsPsych.data.getTrialsOfType('single-stim');
-
-    var sum_correct = 0;
-    var trial_count = 0;
-    for (var i = 0; i < trials.length; i++) {
-        if(trials[i].key_press === trials[i].correct_response.charCodeAt(0)){
-            sum_correct += 1;
+var test_procedure = {
+    timeline: [
+        {
+            type: 'single-stim',
+            stimulus: '<p class="fixation">+</p>',
+            choices: jsPsych.NO_KEYS,
+            timing_response: 500,
+            is_html: true,
+            data: {stimulus_type: 'fixation'}
+        },
+        {
+            type: 'single-stim',
+            stimulus:  jsPsych.timelineVariable('stimulus'),
+            choices: ['r','g', 'b'],
+            is_html: true,
+            data: jsPsych.timelineVariable('data'),
+            on_finish: function(d){
+                d.correct = d.key_press == d.correct_response.charCodeAt(0);
+            }
         }
-        trial_count++;
-    }
-    return Math.floor(100 * sum_correct / trial_count);
-}
+    ],
+    timeline_variables: trials,
+    randomize_order: true
+};
+timeline.push(test_procedure);
 
-
-/* define experiment structure */
-
-var experiment_blocks = [];
-experiment_blocks.push(welcome_block);
-experiment_blocks.push(instructions_block);
-experiment_blocks.push(test_block);
-experiment_blocks.push(debrief_block);
-
+var summary = {
+    type: 'single-stim',
+    stimulus: function(){
+        var congruent_rt = jsPsych.data.get().filter({stimulus_type: 'congruent'}).select('rt').mean();
+        var incongruent_rt = jsPsych.data.get().filter({stimulus_type: 'incongruent'}).select('rt').mean();
+        var unrelated_rt = jsPsych.data.get().filter({stimulus_type: 'unrelated'}).select('rt').mean();
+        var congruent_pct = 100 * jsPsych.data.get().filter({stimulus_type: 'congruent'}).select('correct').mean();
+        var incongruent_pct = 100 * jsPsych.data.get().filter({stimulus_type: 'incongruent'}).select('correct').mean();
+        var unrelated_pct = 100 * jsPsych.data.get().filter({stimulus_type: 'unrelated'}).select('correct').mean();
+        return '<p>Your average response time on congruent trials was '+Math.round(congruent_rt)+'ms. '+
+            'Your average response time on incongruent trials was '+Math.round(incongruent_rt)+'ms. '+
+            'Your average response time on unrelated trials was '+Math.round(unrelated_rt)+'ms.</p>'+
+            '<p>Your average percent correct on congruent trials was '+Math.round(congruent_pct)+'%. '+
+            'Your average percent correct on incongruent trials was '+Math.round(incongruent_pct)+'%. '+
+            'Your average percent correct on unrelated trials was '+Math.round(unrelated_pct)+'%.</p>'+
+            '<p>Thanks for participating!</p>';
+    },
+    choices: ['q'],
+    is_html: true
+};
+timeline.push(summary);
 
 /* start the experiment */
 
 jsPsych.init({
-    display_element: $('#jspsych-target'),
-    timeline: experiment_blocks,
+    display_element: 'jspsych-target',
+    timeline: timeline,
     on_finish: function() {
         // record proportion correct as unstructured data
         psiturk.recordUnstructuredData("bonus", (.01 * getPercentCorrect()).toFixed(2));
