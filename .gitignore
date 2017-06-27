@@ -5,3 +5,4 @@
 
 /.psiturk_history
 .ipynb_checkpoints
+.DS_Store
