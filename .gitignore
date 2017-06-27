@@ -4,3 +4,4 @@
 *.pyc
 
 /.psiturk_history
+.ipynb_checkpoints
