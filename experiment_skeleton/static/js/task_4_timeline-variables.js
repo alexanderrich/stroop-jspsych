@@ -1,8 +1,6 @@
-/* load psiturk */
 var psiturk = new PsiTurk(uniqueId, adServerLoc, mode);
 
 var timeline = [];
-
 
 var welcome_block = {
     type: "text",
@@ -19,8 +17,8 @@ var instructions_block = {
         "in which the word is printed as quickly as you can.</p><p> press <strong>R</strong> " +
         "for red, <strong>G</strong> for green, and <strong>B</strong> for blue.</p>" +
         "<p>Press the SPACE key to begin.</p>",
-    timing_post_trial: 1000,
     cont_key: [' '],
+    timing_post_trial: 1000,
     on_finish: function(){
         psiturk.finishInstructions();
     }
@@ -28,7 +26,9 @@ var instructions_block = {
 
 timeline.push(instructions_block);
 
-/* stimuli specifications */
+/*
+ trials contains a list of objects with the stimulus and data for each word trial.
+ */
 var trials = [
     {
         stimulus: "<p style='font-size: 50px; color: red;'>SHIP</p>",
@@ -77,9 +77,10 @@ var fixation = {
     data: {stimulus_type: 'fixation'}
 };
 
+/* we've modified the 'word' trial to use timeline variables for 'stimulus' and 'data'*/
 var word = {
     type: 'single-stim',
-    stimulus:  jsPsych.timelineVariable('stimulus'),
+    stimulus: jsPsych.timelineVariable('stimulus'),
     choices: ['r','g', 'b'],
     is_html: true,
     data: jsPsych.timelineVariable('data'),
@@ -89,65 +90,17 @@ var word = {
 };
 
 var test_procedure = {
+    /* now we nest the fixation-word pairs into a 'test_procedure' trial */
     timeline: [fixation, word],
+    /* the timeline_variable property contains a list of properties to differentiate each trial */
     timeline_variables: trials,
+    /* the trial specifications in timeline_variables will be completed in a random order */
     randomize_order: true
 };
+
 timeline.push(test_procedure);
-
-var summary = {
-    type: 'single-stim',
-    stimulus: function(){
-        var congruent_rt = jsPsych.data.get().filter({stimulus_type: 'congruent'}).select('rt').mean();
-        var incongruent_rt = jsPsych.data.get().filter({stimulus_type: 'incongruent'}).select('rt').mean();
-        var unrelated_rt = jsPsych.data.get().filter({stimulus_type: 'unrelated'}).select('rt').mean();
-        var congruent_pct = 100 * jsPsych.data.get().filter({stimulus_type: 'congruent'}).select('correct').mean();
-        var incongruent_pct = 100 * jsPsych.data.get().filter({stimulus_type: 'incongruent'}).select('correct').mean();
-        var unrelated_pct = 100 * jsPsych.data.get().filter({stimulus_type: 'unrelated'}).select('correct').mean();
-        return '<p>Your average response time on congruent trials was '+Math.round(congruent_rt)+'ms. '+
-            'Your average response time on incongruent trials was '+Math.round(incongruent_rt)+'ms. '+
-            'Your average response time on unrelated trials was '+Math.round(unrelated_rt)+'ms.</p>'+
-            '<p>Your average percent correct on congruent trials was '+Math.round(congruent_pct)+'%. '+
-            'Your average percent correct on incongruent trials was '+Math.round(incongruent_pct)+'%. '+
-            'Your average percent correct on unrelated trials was '+Math.round(unrelated_pct)+'%.</p>'+
-            '<p>Thanks for participating! Press "q" to finish the experiment.</p>';
-    },
-    choices: ['q'],
-    is_html: true
-};
-timeline.push(summary);
-
-/* record id, condition, counterbalance on every trial */
-jsPsych.data.addProperties({
-    uniqueId: uniqueId,
-    condition: condition,
-    counterbalance: counterbalance
-});
 
 jsPsych.init({
     display_element: 'jspsych-target',
-    timeline: timeline,
-    // record data to psiTurk after each trial
-    on_data_update: function(data) {
-        psiturk.recordTrialData(data);
-    },
-    on_finish: function() {
-        // record proportion correct as unstructured data
-        psiturk.recordUnstructuredData("bonus", jsPsych.data.get()
-                                       .filter([{stimulus_type: 'incongruent'},
-                                                {stimulus_type: 'congruent'},
-                                                {stimulus_type: 'unrelated'}])
-                                       .select('correct')
-                                       .mean()
-                                       .toFixed(2));
-        // save data
-        psiturk.saveData({
-            success: function() {
-                // upon saving, add proportion correct as a bonus (see custom.py) and complete HIT
-                psiturk.computeBonus("compute_bonus", function () {
-                    psiturk.completeHIT();
-                });
-            }
-        });
-    },
+    timeline: timeline
 });

@@ -1,8 +1,7 @@
-/* load psiturk */
 var psiturk = new PsiTurk(uniqueId, adServerLoc, mode);
 
-var timeline = [];
 
+var timeline = [];
 
 var welcome_block = {
     type: "text",
@@ -19,8 +18,8 @@ var instructions_block = {
         "in which the word is printed as quickly as you can.</p><p> press <strong>R</strong> " +
         "for red, <strong>G</strong> for green, and <strong>B</strong> for blue.</p>" +
         "<p>Press the SPACE key to begin.</p>",
-    timing_post_trial: 1000,
     cont_key: [' '],
+    timing_post_trial: 1000,
     on_finish: function(){
         psiturk.finishInstructions();
     }
@@ -28,7 +27,6 @@ var instructions_block = {
 
 timeline.push(instructions_block);
 
-/* stimuli specifications */
 var trials = [
     {
         stimulus: "<p style='font-size: 50px; color: red;'>SHIP</p>",
@@ -79,7 +77,7 @@ var fixation = {
 
 var word = {
     type: 'single-stim',
-    stimulus:  jsPsych.timelineVariable('stimulus'),
+    stimulus: jsPsych.timelineVariable('stimulus'),
     choices: ['r','g', 'b'],
     is_html: true,
     data: jsPsych.timelineVariable('data'),
@@ -93,6 +91,7 @@ var test_procedure = {
     timeline_variables: trials,
     randomize_order: true
 };
+
 timeline.push(test_procedure);
 
 var summary = {
@@ -117,22 +116,27 @@ var summary = {
 };
 timeline.push(summary);
 
-/* record id, condition, counterbalance on every trial */
+/*
+ record uniqueId, condition, and counterbalance in every trial.
+ these variables are populated by psiturk server
+*/
 jsPsych.data.addProperties({
     uniqueId: uniqueId,
     condition: condition,
     counterbalance: counterbalance
 });
 
+
 jsPsych.init({
     display_element: 'jspsych-target',
     timeline: timeline,
-    // record data to psiTurk after each trial
+    /* record data to locally to psiturk javascript object after each trial */
     on_data_update: function(data) {
         psiturk.recordTrialData(data);
     },
+    /* called at end of experiment */
     on_finish: function() {
-        // record proportion correct as unstructured data
+        /* record grand mean correct as unstructured data */
         psiturk.recordUnstructuredData("bonus", jsPsych.data.get()
                                        .filter([{stimulus_type: 'incongruent'},
                                                 {stimulus_type: 'congruent'},
@@ -140,14 +144,14 @@ jsPsych.init({
                                        .select('correct')
                                        .mean()
                                        .toFixed(2));
-        // save data
+        /* save data to database */
         psiturk.saveData({
             success: function() {
-                // upon saving, add proportion correct as a bonus (see custom.py) and complete HIT
+                /* upon saving, add proportion correct as a bonus (see custom.py) and complete HIT */
                 psiturk.computeBonus("compute_bonus", function () {
                     psiturk.completeHIT();
                 });
             }
         });
-    },
+    }
 });
